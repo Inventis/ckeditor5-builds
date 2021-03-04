@@ -1,0 +1,150 @@
+/**
+ * @license Copyright (c) 2021, Inventis. All rights reserved.
+ * For licensing, see LICENSE.
+ */
+
+import Editor from '@ckeditor/ckeditor5-core/src/editor/editor';
+import DataApiMixin from '@ckeditor/ckeditor5-core/src/editor/utils/dataapimixin';
+import ElementApiMixin from '@ckeditor/ckeditor5-core/src/editor/utils/elementapimixin';
+import attachToForm from '@ckeditor/ckeditor5-core/src/editor/utils/attachtoform';
+import setDataInElement from '@ckeditor/ckeditor5-utils/src/dom/setdatainelement';
+import getDataFromElement from '@ckeditor/ckeditor5-utils/src/dom/getdatafromelement';
+import mix from '@ckeditor/ckeditor5-utils/src/mix';
+import CKEditorError from '@ckeditor/ckeditor5-utils/src/ckeditorerror';
+import secureSourceElement from '@ckeditor/ckeditor5-core/src/editor/utils/securesourceelement';
+import InlineEditorUIView from '@ckeditor/ckeditor5-editor-inline/src/inlineeditoruiview';
+import InlineEditorUI from '@ckeditor/ckeditor5-editor-inline/src/inlineeditorui';
+import Essentials from '@ckeditor/ckeditor5-essentials/src/essentials';
+import Autoformat from '@ckeditor/ckeditor5-autoformat/src/autoformat';
+import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
+import Italic from '@ckeditor/ckeditor5-basic-styles/src/italic';
+import Underline from '@ckeditor/ckeditor5-basic-styles/src/underline';
+import Heading from '@ckeditor/ckeditor5-heading/src/heading';
+import Indent from '@ckeditor/ckeditor5-indent/src/indent';
+import Link from '@ckeditor/ckeditor5-link/src/link';
+import List from '@ckeditor/ckeditor5-list/src/list';
+import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
+import PasteFromOffice from '@ckeditor/ckeditor5-paste-from-office/src/pastefromoffice';
+import Table from '@ckeditor/ckeditor5-table/src/table';
+import TableToolbar from '@ckeditor/ckeditor5-table/src/tabletoolbar';
+
+export default class PageContentEditor extends Editor {
+    constructor(sourceElement, config) {
+        super(config);
+
+        this.model.schema.register('$inlineRoot', {
+            isLimit: true,
+            isInline: true
+        });
+        this.model.schema.extend('$text', {
+            allowIn: ['$inlineRoot']
+        });
+
+        this.model.document.createRoot(config.isInline ? '$inlineRoot' : '$root');
+
+        this.sourceElement = sourceElement;
+        secureSourceElement(this);
+
+        const shouldToolbarGroupWhenFull = !this.config.get('toolbar.shouldNotGroupWhenFull');
+
+        const view = new InlineEditorUIView(this.locale, this.editing.view, this.sourceElement, {
+            shouldToolbarGroupWhenFull
+        });
+        this.ui = new InlineEditorUI(this, view);
+
+        attachToForm(this);
+    }
+
+    destroy() {
+        // Cache the data, then destroy.
+        // It's safe to assume that the model->view conversion will not work after super.destroy().
+        const data = this.getData();
+
+        this.ui.destroy();
+
+        return super.destroy()
+            .then(() => {
+                if (this.sourceElement) {
+                    setDataInElement(this.sourceElement, data);
+                }
+            });
+    }
+
+    static create(sourceElement, config = {}) {
+        return new Promise(resolve => {
+            if (sourceElement.tagName === 'TEXTAREA') {
+                throw new CKEditorError('editor-wrong-element', null);
+            }
+
+            const editor = new this(sourceElement, config);
+
+            resolve(
+                editor.initPlugins()
+                    .then(() => {
+                        editor.ui.init();
+                    })
+                    .then(() => editor.data.init(getDataFromElement(sourceElement)))
+                    .then(() => editor.fire('ready'))
+                    .then(() => editor)
+            );
+        });
+    }
+}
+
+// Plugins to include in the build.
+PageContentEditor.builtinPlugins = [
+    Essentials,
+    Autoformat,
+    Bold,
+    Italic,
+    Underline,
+    Heading,
+    Indent,
+    Link,
+    List,
+    Paragraph,
+    PasteFromOffice,
+    Table,
+    TableToolbar
+];
+
+PageContentEditor.defaultConfig = {
+    toolbar: {
+        items: [
+            'heading',
+            '|',
+            'bold',
+            'italic',
+            'underline',
+            'link',
+            '|',
+            'outdent',
+            'indent'
+        ]
+    },
+
+    heading: {
+        options: [
+            {model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph'},
+            {model: 'heading2', view: 'h2', title: 'Heading 1', class: 'ck-heading_heading2'},
+            {model: 'heading3', view: 'h3', title: 'Heading 2', class: 'ck-heading_heading3'},
+            {model: 'heading4', view: 'h4', title: 'Heading 3', class: 'ck-heading_heading4'},
+            {model: 'heading5', view: 'h5', title: 'Heading 4', class: 'ck-heading_heading5'},
+            {model: 'heading6', view: 'h6', title: 'Heading 5', class: 'ck-heading_heading6'}
+        ]
+    },
+
+    table: {
+        contentToolbar: [
+            'tableColumn',
+            'tableRow',
+            'mergeTableCells'
+        ]
+    },
+
+    // This value must be kept in sync with the language defined in webpack.config.js.
+    language: 'en'
+};
+
+mix(PageContentEditor, DataApiMixin);
+mix(PageContentEditor, ElementApiMixin);
