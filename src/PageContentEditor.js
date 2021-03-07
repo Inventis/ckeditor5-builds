@@ -28,6 +28,10 @@ import PasteFromOffice from '@ckeditor/ckeditor5-paste-from-office/src/pastefrom
 import Table from '@ckeditor/ckeditor5-table/src/table';
 import TableToolbar from '@ckeditor/ckeditor5-table/src/tabletoolbar';
 
+// These classes apply styling to the editable (the element the editor is activated on). We don't want that for our
+// inline editor.
+const editableClassesToRemove = ['ck-editor__editable', 'ck-rounded-corners', 'ck-editor__editable_inline']
+
 export default class PageContentEditor extends Editor {
     constructor(sourceElement, config) {
         super(config);
@@ -50,6 +54,8 @@ export default class PageContentEditor extends Editor {
         const view = new InlineEditorUIView(this.locale, this.editing.view, this.sourceElement, {
             shouldToolbarGroupWhenFull
         });
+
+        this.filterEditableClasses(view, editableClassesToRemove);
         this.ui = new InlineEditorUI(this, view);
 
         attachToForm(this);
@@ -88,6 +94,11 @@ export default class PageContentEditor extends Editor {
                     .then(() => editor)
             );
         });
+    }
+
+    filterEditableClasses(view, toRemove) {
+        const currentClasses = view.editable.template.attributes['class'] || [];
+        view.editable.template.attributes['class'] = currentClasses.filter(name => toRemove.indexOf(name) === -1);
     }
 }
 
