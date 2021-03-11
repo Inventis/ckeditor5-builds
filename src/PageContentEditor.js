@@ -12,8 +12,9 @@ import getDataFromElement from '@ckeditor/ckeditor5-utils/src/dom/getdatafromele
 import mix from '@ckeditor/ckeditor5-utils/src/mix';
 import CKEditorError from '@ckeditor/ckeditor5-utils/src/ckeditorerror';
 import secureSourceElement from '@ckeditor/ckeditor5-core/src/editor/utils/securesourceelement';
-import InlineEditorUIView from '@ckeditor/ckeditor5-editor-inline/src/inlineeditoruiview';
-import InlineEditorUI from '@ckeditor/ckeditor5-editor-inline/src/inlineeditorui';
+import BalloonEditorUIView from '@ckeditor/ckeditor5-editor-balloon/src/ballooneditoruiview';
+import BalloonEditorUI from '@ckeditor/ckeditor5-editor-balloon/src/ballooneditorui';
+import {BalloonToolbar} from '@ckeditor/ckeditor5-ui';
 import Essentials from '@ckeditor/ckeditor5-essentials/src/essentials';
 import Autoformat from '@ckeditor/ckeditor5-autoformat/src/autoformat';
 import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
@@ -28,6 +29,8 @@ import PasteFromOffice from '@ckeditor/ckeditor5-paste-from-office/src/pastefrom
 import Table from '@ckeditor/ckeditor5-table/src/table';
 import TableToolbar from '@ckeditor/ckeditor5-table/src/tabletoolbar';
 
+import './theme/overrides.css'
+
 // These classes apply styling to the editable (the element the editor is activated on). We don't want that for our
 // inline editor.
 const editableClassesToRemove = ['ck-editor__editable', 'ck-rounded-corners', 'ck-editor__editable_inline']
@@ -35,6 +38,16 @@ const editableClassesToRemove = ['ck-editor__editable', 'ck-rounded-corners', 'c
 export default class PageContentEditor extends Editor {
     constructor(sourceElement, config) {
         super(config);
+
+        this.sourceElement = sourceElement;
+        secureSourceElement(this);
+
+        const plugins = this.config.get('plugins');
+        plugins.push(BalloonToolbar);
+
+        this.config.set('plugins', plugins);
+
+        this.config.define('balloonToolbar', this.config.get('toolbar'));
 
         this.model.schema.register('$inlineRoot', {
             isLimit: true,
@@ -46,17 +59,9 @@ export default class PageContentEditor extends Editor {
 
         this.model.document.createRoot(config.isInline ? '$inlineRoot' : '$root');
 
-        this.sourceElement = sourceElement;
-        secureSourceElement(this);
-
-        const shouldToolbarGroupWhenFull = !this.config.get('toolbar.shouldNotGroupWhenFull');
-
-        const view = new InlineEditorUIView(this.locale, this.editing.view, this.sourceElement, {
-            shouldToolbarGroupWhenFull
-        });
-
+        const view = new BalloonEditorUIView(this.locale, this.editing.view, this.sourceElement);
         this.filterEditableClasses(view, editableClassesToRemove);
-        this.ui = new InlineEditorUI(this, view);
+        this.ui = new BalloonEditorUI(this, view);
 
         attachToForm(this);
     }
