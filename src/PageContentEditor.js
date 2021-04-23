@@ -28,6 +28,8 @@ import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
 import PasteFromOffice from '@ckeditor/ckeditor5-paste-from-office/src/pastefromoffice';
 import Table from '@ckeditor/ckeditor5-table/src/table';
 import TableToolbar from '@ckeditor/ckeditor5-table/src/tabletoolbar';
+import Subscript from '@ckeditor/ckeditor5-basic-styles/src/subscript';
+import Superscript from '@ckeditor/ckeditor5-basic-styles/src/superscript';
 
 import './theme/overrides.css'
 
@@ -121,7 +123,9 @@ PageContentEditor.builtinPlugins = [
     Paragraph,
     PasteFromOffice,
     Table,
-    TableToolbar
+    TableToolbar,
+    Subscript,
+    Superscript
 ];
 
 PageContentEditor.defaultConfig = {
@@ -133,6 +137,9 @@ PageContentEditor.defaultConfig = {
             'italic',
             'underline',
             'link',
+            '|',
+            'subscript',
+            'superscript',
             '|',
             'outdent',
             'indent'
