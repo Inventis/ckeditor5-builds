@@ -6,7 +6,8 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = {
     plugins: [
         new CKEditorWebpackPlugin({
-            language: 'en'
+            language: 'en',
+            additionalLanguages: 'all'
         }),
         new MiniCssExtractPlugin({
             filename: 'styles.css'
