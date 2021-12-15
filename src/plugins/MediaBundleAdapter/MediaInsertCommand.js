@@ -4,7 +4,7 @@
  */
 
 import Command from '@ckeditor/ckeditor5-core/src/command';
-import {findOptimalInsertionPosition} from '@ckeditor/ckeditor5-widget/src/utils';
+import {findOptimalInsertionRange} from '@ckeditor/ckeditor5-widget/src/utils';
 
 export default class MediaInsertCommand extends Command {
     refresh() {
@@ -49,7 +49,7 @@ function insertMedia(writer, editor, media)
     }
     writer.append(caption, image);
 
-    const insertAtSelection = findOptimalInsertionPosition(doc.selection, editor.model);
+    const insertAtSelection = findOptimalInsertionRange(doc.selection, editor.model);
 
     editor.model.insertContent(image, insertAtSelection);
 
@@ -87,9 +87,8 @@ function checkSelectionWithObject( selection, schema )
 // Returns a node that will be used to insert image with `model.insertContent` to check if image can be placed there.
 function getInsertImageParent( selection, model )
 {
-    const insertAt = findOptimalInsertionPosition( selection, model );
-
-    let parent = insertAt.parent;
+    const insertionRange = findOptimalInsertionRange( selection, model );
+    let parent = insertionRange.start.parent;
 
     if ( !parent.is( '$root' ) ) {
         parent = parent.parent;
