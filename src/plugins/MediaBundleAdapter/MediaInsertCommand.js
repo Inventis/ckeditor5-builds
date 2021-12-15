@@ -4,95 +4,51 @@
  */
 
 import Command from '@ckeditor/ckeditor5-core/src/command';
-import {findOptimalInsertionRange} from '@ckeditor/ckeditor5-widget/src/utils';
 
 export default class MediaInsertCommand extends Command {
     refresh() {
-        const model = this.editor.model;
-        const selection = model.document.selection;
-        const schema = model.schema;
-
-        this.isEnabled = isImageAllowedInParent( selection, schema, model ) && checkSelectionWithObject( selection, schema );
+        this.isEnabled = this.editor.plugins.get( 'ImageUtils' ).isImageAllowed();
     }
 
     execute(options) {
-        const editor = this.editor;
+        const sourceDefinitions = parseMedia( options.media );
+        const selection = this.editor.model.document.selection;
+        const imageUtils = this.editor.plugins.get( 'ImageUtils' );
 
-        editor.model.change(writer => {
-            const mediaToInsert = Array.isArray(options.media) ? options.media : [options.media];
+        // In case of multiple images, each image (starting from the 2nd) will be inserted at a position that
+        // follows the previous one. That will move the selection and, to stay on the safe side and make sure
+        // all images inherit the same selection attributes, they are collected beforehand.
+        //
+        // Applying these attributes ensures, for instance, that inserting an (inline) image into a link does
+        // not split that link but preserves its continuity.
+        //
+        // Note: Selection attributes that do not make sense for images will be filtered out by insertImage() anyway.
+        const selectionAttributes = Object.fromEntries( selection.getAttributes() );
 
-            for (const file of mediaToInsert) {
-                insertMedia(writer, editor, file);
+        sourceDefinitions.forEach( ( sourceDefinition, index ) => {
+            const selectedElement = selection.getSelectedElement();
+
+            if ( typeof sourceDefinition === 'string' ) {
+                sourceDefinition = { src: sourceDefinition };
             }
-        });
+
+            // Inserting of an inline image replace the selected element and make a selection on the inserted image.
+            // Therefore inserting multiple inline images requires creating position after each element.
+            if ( index && selectedElement && imageUtils.isImage( selectedElement ) ) {
+                const position = this.editor.model.createPositionAfter( selectedElement );
+
+                imageUtils.insertImage( { ...sourceDefinition, ...selectionAttributes }, position );
+            } else {
+                imageUtils.insertImage( { ...sourceDefinition, ...selectionAttributes } );
+            }
+        } );
     }
 }
 
-// Handles uploading single file.
-//
-// @param {module:engine/model/writer~writer} writer
-// @param {module:core/editor/editor~Editor} editor
-// @param {File} file
-function insertMedia(writer, editor, media)
-{
-    const doc = editor.model.document;
-
-    let imageAttributes = {src: media.src, alt: media.name, caption: media.description};
-    const srcSet = media.srcset && Array.isArray(media.srcset) ? media.srcset.join(',') : null;
-    if (srcSet) {
-        imageAttributes.srcset = srcSet;
-    }
-    const image = writer.createElement('image', imageAttributes);
-    const caption = writer.createElement('caption');
-    if (media.description) {
-        writer.insert(writer.createText(media.description), caption);
-    }
-    writer.append(caption, image);
-
-    const insertAtSelection = findOptimalInsertionRange(doc.selection, editor.model);
-
-    editor.model.insertContent(image, insertAtSelection);
-
-    // Inserting an image might've failed due to schema regulations.
-    if (image.parent) {
-        writer.setSelection(image, 'on');
-    }
-}
-
-// Checks if image is allowed by schema in optimal insertion parent.
-function isImageAllowedInParent( selection, schema, model )
-{
-    const parent = getInsertImageParent( selection, model );
-
-    if (!parent) {
-        return true;
-    }
-
-    return schema.checkChild( parent, 'image' );
-}
-
-// Additional check for when the command should be disabled:
-// - selection is on object
-// - selection is inside object
-function checkSelectionWithObject( selection, schema )
-{
-    const selectedElement = selection.getSelectedElement();
-
-    const isSelectionOnObject = !!selectedElement && schema.isObject( selectedElement );
-    const isSelectionInObject = !![ ...selection.focus.getAncestors() ].find( ancestor => schema.isObject( ancestor ) );
-
-    return !isSelectionOnObject && !isSelectionInObject;
-}
-
-// Returns a node that will be used to insert image with `model.insertContent` to check if image can be placed there.
-function getInsertImageParent( selection, model )
-{
-    const insertionRange = findOptimalInsertionRange( selection, model );
-    let parent = insertionRange.start.parent;
-
-    if ( !parent.is( '$root' ) ) {
-        parent = parent.parent;
-    }
-
-    return parent;
+function parseMedia( media ) {
+    return media.map(item => ({
+        src: item.src,
+        alt: item.name,
+        caption: media.description,
+    }));
 }
