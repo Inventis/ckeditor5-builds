@@ -68,7 +68,6 @@ ClassicEditor.defaultConfig = {
             'bulletedList',
             'numberedList',
             '|',
-            'alignment',
             'indent',
             'outdent',
             '|',

@@ -146,7 +146,6 @@ PageContentEditor.defaultConfig = {
             'subscript',
             'superscript',
             '|',
-            'alignment',
             'outdent',
             'indent'
         ]
