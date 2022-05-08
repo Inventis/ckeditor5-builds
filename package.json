@@ -15,6 +15,7 @@
   "author": "Inventis BV",
   "license": "SEE LICENSE IN LICENSE",
   "devDependencies": {
+    "@ckeditor/ckeditor5-alignment": "^31.1.0",
     "@ckeditor/ckeditor5-autoformat": "^31.1.0",
     "@ckeditor/ckeditor5-basic-styles": "^31.1.0",
     "@ckeditor/ckeditor5-block-quote": "^31.1.0",
