@@ -90,7 +90,7 @@ export default class PageContentEditor extends Editor {
                 throw new CKEditorError('editor-wrong-element', null);
             }
 
-            const editor = new this(sourceElement, config);
+            const editor = new this(sourceElement, updateConfig(sourceElement, config));
 
             resolve(
                 editor.initPlugins()
@@ -108,6 +108,65 @@ export default class PageContentEditor extends Editor {
         const currentClasses = view.editable.template.attributes['class'] || [];
         view.editable.template.attributes['class'] = currentClasses.filter(name => toRemove.indexOf(name) === -1);
     }
+}
+
+/**
+ * Updates the provided config to ensure it is valid for the context it is going to be used in.
+ *
+ * @param {HTMLElement} sourceElement
+ * @param {Object} config
+ * @returns {Object}
+ */
+function updateConfig(sourceElement, config) {
+    const removePlugins = [];
+    const removeToolbarItems = [];
+
+    if (config.isInline === true) {
+        removeToolbarItems.push('heading');
+        removeToolbarItems.push('outdent');
+        removeToolbarItems.push('indent');
+    }
+
+    // Disable the `link` option when `sourceElement` is nested inside a link. Don't use `instanceof` here as the
+    // elements may come from a different window.
+    if (isElementNestedIn(sourceElement, 'A')) {
+        removeToolbarItems.push('link');
+        removePlugins.push('Link');
+    }
+
+    config.removePlugins = [
+        ...config.removePlugins || [],
+        ...removePlugins,
+    ];
+
+    // The toolbar can be an array or an object, see
+    // https://ckeditor.com/docs/ckeditor5/latest/api/module_core_editor_editorconfig-EditorConfig.html#member-toolbar.
+    // If it is an array, we convert to an object.
+    if (Array.isArray(config.toolbar)) {
+        config.toolbar = {
+            items: config.toolbar,
+        };
+    } else if (config.toolbar === undefined) {
+        config.toolbar = {};
+    }
+
+    config.toolbar.removeItems = [
+        ...config.toolbar.removeItems || [],
+        ...removeToolbarItems
+    ];
+
+    return config;
+}
+
+function isElementNestedIn(element, type) {
+    let current = element;
+    while (current.tagName !== type) {
+        current = current.parentElement;
+        if (current === null) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // Plugins to include in the build.
