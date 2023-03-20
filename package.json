@@ -1,6 +1,6 @@
 {
   "name": "@inventis/ckeditor5-builds",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Custom CKEditor builds",
   "scripts": {
     "build": "webpack --mode=production"
