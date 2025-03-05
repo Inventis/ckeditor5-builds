@@ -1,0 +1,17 @@
+diff --git a/node_modules/@ckeditor/ckeditor5-utils/src/dom/isnode.js b/node_modules/@ckeditor/ckeditor5-utils/src/dom/isnode.js
+index c1e0926..acb339c 100644
+--- a/node_modules/@ckeditor/ckeditor5-utils/src/dom/isnode.js
++++ b/node_modules/@ckeditor/ckeditor5-utils/src/dom/isnode.js
+@@ -15,11 +15,7 @@
+  */
+ export default function isNode( obj ) {
+ 	if ( obj ) {
+-		if ( obj.defaultView ) {
+-			return obj instanceof obj.defaultView.Document;
+-		} else if ( obj.ownerDocument && obj.ownerDocument.defaultView ) {
+-			return obj instanceof obj.ownerDocument.defaultView.Node;
+-		}
++		return typeof obj === 'object' && obj.nodeType !== undefined;
+ 	}
+ 
+ 	return false;
