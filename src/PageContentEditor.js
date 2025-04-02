@@ -31,6 +31,8 @@ import Table from '@ckeditor/ckeditor5-table/src/table';
 import TableToolbar from '@ckeditor/ckeditor5-table/src/tabletoolbar';
 import Subscript from '@ckeditor/ckeditor5-basic-styles/src/subscript';
 import Superscript from '@ckeditor/ckeditor5-basic-styles/src/superscript';
+import Style from '@ckeditor/ckeditor5-style/src/style';
+import GeneralHtmlSupport from '@ckeditor/ckeditor5-html-support/src/generalhtmlsupport';
 
 import './theme/overrides.css'
 
@@ -186,7 +188,9 @@ PageContentEditor.builtinPlugins = [
     Table,
     TableToolbar,
     Subscript,
-    Superscript
+    Superscript,
+    Style,
+    GeneralHtmlSupport
 ];
 
 PageContentEditor.defaultConfig = {
