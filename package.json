@@ -3,8 +3,7 @@
   "version": "1.4.1",
   "description": "Custom CKEditor builds",
   "scripts": {
-    "build": "webpack --mode=production",
-    "postinstall": "patch-package"
+    "build": "patch-package && webpack --mode=production"
   },
   "repository": {
     "type": "git",
