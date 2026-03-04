@@ -3,9 +3,7 @@
  * For licensing, see LICENSE.
  */
 
-import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
-import ButtonView from '@ckeditor/ckeditor5-ui/src/button/buttonview';
-import imageIcon from '@ckeditor/ckeditor5-core/theme/icons/image.svg';
+import { Plugin, ButtonView, IconMedia } from 'ckeditor5';
 
 export default class MediasSelect extends Plugin {
     /**
@@ -22,7 +20,7 @@ export default class MediasSelect extends Plugin {
 
             view.set({
                 label: t('Insert image'),
-                icon: imageIcon,
+                icon: IconMedia,
                 tooltip: true
             });
 

@@ -3,10 +3,12 @@
  * For licensing, see LICENSE.
  */
 
-import PageContentEditor from './PageContentEditor';
 import ClassicEditor from './ClassicEditor';
+import PageContentEditor from './PageContentEditor';
 
-export default {
-    PageContentEditor: PageContentEditor,
-    ClassicEditor: ClassicEditor,
+import 'ckeditor5/ckeditor5-editor.css';
+
+export {
+    PageContentEditor,
+    ClassicEditor,
 }

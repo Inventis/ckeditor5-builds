@@ -1,53 +1,86 @@
 const path = require('path');
-const CKEditorWebpackPlugin = require('@ckeditor/ckeditor5-dev-webpack-plugin');
-const {styles} = require('@ckeditor/ckeditor5-dev-utils');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const { styles } = require('@ckeditor/ckeditor5-dev-utils');
 
-module.exports = {
-    plugins: [
-        new CKEditorWebpackPlugin({
-            language: 'en',
-            additionalLanguages: 'all'
-        }),
-        new MiniCssExtractPlugin({
-            filename: 'styles.css'
-        })
-    ],
+module.exports = (env, argv) => {
+    const isDev = argv.mode === 'development';
 
-    entry: path.resolve(__dirname, 'src', 'entry.js'),
+    return {
+        mode: isDev ? 'development' : 'production',
 
-    output: {
-        // The name under which the editor will be exported.
-        library: 'CKEDITOR',
+        entry: './src/entry.js',
 
-        path: path.resolve(__dirname, 'build'),
-        filename: 'ckeditor.js',
-        libraryTarget: 'umd',
-        libraryExport: 'default'
-    },
-
-    module: {
-        rules: [
-            {
-                test: /\.svg$/,
-                use: ['raw-loader']
+        output: {
+            path: path.resolve(__dirname, 'build'),
+            filename: 'ckeditor.js',
+            library: {
+                name: 'CKEDITOR',
+                type: 'umd'
             },
-            {
-                test: /\.css$/,
-                use: [
-                    MiniCssExtractPlugin.loader,
-                    'css-loader',
+            clean: true,
+        },
+
+        resolve: {
+            extensions: ['.js'],
+            mainFields: ['browser', 'module', 'main'],
+            conditionNames: ['import', 'module', 'browser', 'default']
+        },
+
+        module: {
+            rules: [
+                {
+                    test: /\.svg$/,
+                    use: ['raw-loader']
+                },
+                {
+                    test: /\.css$/,
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        'css-loader',
+                        {
+                            loader: 'postcss-loader',
+                            options: {
+                                postcssOptions: styles.getPostCssConfig({
+                                    themeImporter: {
+                                        themePath: require.resolve('@ckeditor/ckeditor5-theme-lark')
+                                    },
+                                    minify: !isDev
+                                })
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+
+        plugins: [
+            new CopyWebpackPlugin({
+                patterns: [
                     {
-                        loader: 'postcss-loader',
-                        options: styles.getPostCssConfig({
-                            themeImporter: {
-                                themePath: require.resolve('@ckeditor/ckeditor5-theme-lark')
-                            },
-                            minify: true
-                        })
+                        from: path.resolve(__dirname, 'node_modules/ckeditor5/dist/translations/*.umd.js'),
+                        to: ({ context, absoluteFilename }) => {
+                            return `translations/${path.basename(absoluteFilename).replace('.umd', '')}`;
+                        },
+                        filter: (resourcePath) => resourcePath.endsWith('.js'),
                     }
                 ]
-            }
-        ]
-    }
+            }),
+            new MiniCssExtractPlugin({
+                filename: 'styles.css'
+            }),
+        ],
+
+        devtool: isDev ? 'source-map' : false,
+
+        optimization: {
+            minimize: !isDev,
+            minimizer: [
+                new TerserPlugin({
+                    extractComments: false,
+                })
+            ],
+        },
+    };
 };

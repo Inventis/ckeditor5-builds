@@ -3,7 +3,7 @@
  * For licensing, see LICENSE.
  */
 
-import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
+import { Plugin } from 'ckeditor5';
 import MediaSelect from './MediaBundleAdapter/MediasSelect';
 import MediaSelectCommand from './MediaBundleAdapter/MediaSelectCommand';
 import MediaInsertCommand from './MediaBundleAdapter/MediaInsertCommand';
