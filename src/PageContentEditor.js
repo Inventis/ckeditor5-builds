@@ -2,37 +2,29 @@
  * @license Copyright (c) 2021, Inventis. All rights reserved.
  * For licensing, see LICENSE.
  */
-
-import Editor from '@ckeditor/ckeditor5-core/src/editor/editor';
-import DataApiMixin from '@ckeditor/ckeditor5-core/src/editor/utils/dataapimixin';
-import ElementApiMixin from '@ckeditor/ckeditor5-core/src/editor/utils/elementapimixin';
-import attachToForm from '@ckeditor/ckeditor5-core/src/editor/utils/attachtoform';
-import setDataInElement from '@ckeditor/ckeditor5-utils/src/dom/setdatainelement';
-import getDataFromElement from '@ckeditor/ckeditor5-utils/src/dom/getdatafromelement';
-import mix from '@ckeditor/ckeditor5-utils/src/mix';
-import CKEditorError from '@ckeditor/ckeditor5-utils/src/ckeditorerror';
-import secureSourceElement from '@ckeditor/ckeditor5-core/src/editor/utils/securesourceelement';
-import BalloonEditorUIView from '@ckeditor/ckeditor5-editor-balloon/src/ballooneditoruiview';
-import BalloonEditorUI from '@ckeditor/ckeditor5-editor-balloon/src/ballooneditorui';
-import {BalloonToolbar} from '@ckeditor/ckeditor5-ui';
-import Essentials from '@ckeditor/ckeditor5-essentials/src/essentials';
-import Alignment from '@ckeditor/ckeditor5-alignment/src/alignment';
-import Autoformat from '@ckeditor/ckeditor5-autoformat/src/autoformat';
-import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
-import Italic from '@ckeditor/ckeditor5-basic-styles/src/italic';
-import Underline from '@ckeditor/ckeditor5-basic-styles/src/underline';
-import Heading from '@ckeditor/ckeditor5-heading/src/heading';
-import Indent from '@ckeditor/ckeditor5-indent/src/indent';
-import Link from '@ckeditor/ckeditor5-link/src/link';
-import List from '@ckeditor/ckeditor5-list/src/list';
-import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
-import PasteFromOffice from '@ckeditor/ckeditor5-paste-from-office/src/pastefromoffice';
-import Table from '@ckeditor/ckeditor5-table/src/table';
-import TableToolbar from '@ckeditor/ckeditor5-table/src/tabletoolbar';
-import Subscript from '@ckeditor/ckeditor5-basic-styles/src/subscript';
-import Superscript from '@ckeditor/ckeditor5-basic-styles/src/superscript';
-import Style from '@ckeditor/ckeditor5-style/src/style';
-import GeneralHtmlSupport from '@ckeditor/ckeditor5-html-support/src/generalhtmlsupport';
+import {
+    BalloonEditor,
+    Essentials,
+    Autoformat,
+    Bold,
+    Italic,
+    Heading,
+    Indent,
+    Link,
+    List,
+    Paragraph,
+    PasteFromOffice,
+    Table,
+    TableToolbar,
+    Alignment,
+    Underline,
+    Subscript,
+    Superscript,
+    Style,
+    GeneralHtmlSupport,
+    CKEditorError,
+    setDataInElement,
+} from 'ckeditor5';
 
 import './theme/overrides.css'
 
@@ -40,35 +32,32 @@ import './theme/overrides.css'
 // inline editor.
 const editableClassesToRemove = ['ck-editor__editable', 'ck-rounded-corners', 'ck-editor__editable_inline']
 
-export default class PageContentEditor extends Editor {
-    constructor(sourceElement, config) {
-        super(config);
+export default class PageContentEditor extends BalloonEditor {
+    constructor(sourceElementOrData, config = {}) {
+        super(sourceElementOrData, config);
 
-        this.sourceElement = sourceElement;
-        secureSourceElement(this);
+        if (config.isInline) {
+            this.model.schema.extend('$root', {
+                allowChildren: '$text'
+            });
+        }
 
-        const plugins = this.config.get('plugins');
-        plugins.push(BalloonToolbar);
+        this.filterEditableClasses(this.ui.view, editableClassesToRemove);
+    }
 
-        this.config.set('plugins', plugins);
+    static create(sourceElementOrData, config = {}) {
+        return new Promise(resolve => {
+            if (sourceElementOrData.tagName === 'TEXTAREA') {
+                throw new CKEditorError('editor-wrong-element', null);
+            }
 
-        this.config.define('balloonToolbar', this.config.get('toolbar'));
-
-        this.model.schema.register('$inlineRoot', {
-            isLimit: true,
-            isInline: true
+            const editor = new this(sourceElementOrData, updateConfig(sourceElementOrData, config));
+            resolve(editor.initPlugins()
+                .then(() => editor.ui.init())
+                .then(() => editor.data.init(editor.config.get('initialData')))
+                .then(() => editor.fire('ready'))
+                .then(() => editor));
         });
-        this.model.schema.extend('$text', {
-            allowIn: ['$inlineRoot']
-        });
-
-        this.model.document.createRoot(config.isInline ? '$inlineRoot' : '$root');
-
-        const view = new BalloonEditorUIView(this.locale, this.editing.view, this.sourceElement);
-        this.filterEditableClasses(view, editableClassesToRemove);
-        this.ui = new BalloonEditorUI(this, view);
-
-        attachToForm(this);
     }
 
     destroy() {
@@ -86,26 +75,6 @@ export default class PageContentEditor extends Editor {
             });
     }
 
-    static create(sourceElement, config = {}) {
-        return new Promise(resolve => {
-            if (sourceElement.tagName === 'TEXTAREA') {
-                throw new CKEditorError('editor-wrong-element', null);
-            }
-
-            const editor = new this(sourceElement, updateConfig(sourceElement, config));
-
-            resolve(
-                editor.initPlugins()
-                    .then(() => {
-                        editor.ui.init();
-                    })
-                    .then(() => editor.data.init(getDataFromElement(sourceElement)))
-                    .then(() => editor.fire('ready'))
-                    .then(() => editor)
-            );
-        });
-    }
-
     filterEditableClasses(view, toRemove) {
         const currentClasses = view.editable.template.attributes['class'] || [];
         view.editable.template.attributes['class'] = currentClasses.filter(name => toRemove.indexOf(name) === -1);
@@ -120,6 +89,10 @@ export default class PageContentEditor extends Editor {
  * @returns {Object}
  */
 function updateConfig(sourceElement, config) {
+    config = {
+        ...structuredClone(PageContentEditor.defaultConfig),
+        ...config,
+    };
     const removePlugins = [];
     const removeToolbarItems = [];
 
@@ -185,15 +158,17 @@ PageContentEditor.builtinPlugins = [
     List,
     Paragraph,
     PasteFromOffice,
-    Table,
-    TableToolbar,
     Subscript,
     Superscript,
+    Table,
+    TableToolbar,
     Style,
-    GeneralHtmlSupport
+    GeneralHtmlSupport,
 ];
 
 PageContentEditor.defaultConfig = {
+    licenseKey: 'GPL',
+    updateSourceElementOnDestroy: true,
     toolbar: {
         items: [
             'heading',
@@ -246,9 +221,5 @@ PageContentEditor.defaultConfig = {
         },
     },
 
-    // This value must be kept in sync with the language defined in webpack.config.js.
     language: 'en'
-};
-
-mix(PageContentEditor, DataApiMixin);
-mix(PageContentEditor, ElementApiMixin);
+}

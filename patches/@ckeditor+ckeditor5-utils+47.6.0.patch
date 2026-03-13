@@ -1,0 +1,35 @@
+diff --git a/node_modules/@ckeditor/ckeditor5-utils/dist/index.js b/node_modules/@ckeditor/ckeditor5-utils/dist/index.js
+index 35da198..2c7ce6e 100644
+--- a/node_modules/@ckeditor/ckeditor5-utils/dist/index.js
++++ b/node_modules/@ckeditor/ckeditor5-utils/dist/index.js
+@@ -2456,11 +2456,7 @@ function initObservable(observable) {
+  * Checks if the object is a native DOM Node.
+  */ function isNode(obj) {
+     if (obj) {
+-        if (obj.defaultView) {
+-            return obj instanceof obj.defaultView.Document;
+-        } else if (obj.ownerDocument && obj.ownerDocument.defaultView) {
+-            return obj instanceof obj.ownerDocument.defaultView.Node;
+-        }
++        return typeof obj === 'object' && obj.nodeType !== undefined;
+     }
+     return false;
+ }
+diff --git a/node_modules/@ckeditor/ckeditor5-utils/src/dom/isnode.js b/node_modules/@ckeditor/ckeditor5-utils/src/dom/isnode.js
+index 06be24e..045a9f3 100644
+--- a/node_modules/@ckeditor/ckeditor5-utils/src/dom/isnode.js
++++ b/node_modules/@ckeditor/ckeditor5-utils/src/dom/isnode.js
+@@ -10,12 +10,7 @@
+  */
+ export function isNode(obj) {
+     if (obj) {
+-        if (obj.defaultView) {
+-            return obj instanceof obj.defaultView.Document;
+-        }
+-        else if (obj.ownerDocument && obj.ownerDocument.defaultView) {
+-            return obj instanceof obj.ownerDocument.defaultView.Node;
+-        }
++        return typeof obj === 'object' && obj.nodeType !== undefined;
+     }
+     return false;
+ }
